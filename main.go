@@ -2,23 +2,25 @@ package main
 
 import (
 	"fmt"
-
+	"log"
 	"github.com/rangaroo/gator-go/internal/config"
 )
 
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("error reading config: %v", err)
 	}
+	fmt.Printf("Read config: %v\n", cfg)
 
-	cfg.SetUser("rangaroo")
+	err = cfg.SetUser("rangaroo")
+	if err != nil {
+		log.Fatalf("error while updating the current user: %v", err)
+	}
 
 	cfg, err = config.Read()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("error reading config: %v", err)
 	}
-
-	fmt.Println(cfg.DBURL)
-	fmt.Println(cfg.CurrentUserName)
+	fmt.Printf("Updated the config: %v\n", cfg)
 }

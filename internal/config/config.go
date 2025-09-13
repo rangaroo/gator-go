@@ -13,24 +13,31 @@ type Config struct {
 	CurrentUserName string `json:"current_user_name"`
 }
 
+func (cfg *Config) SetUser(userName string) error {
+	cfg.CurrentUserName = userName
+	return write(*cfg)
+}
+
 func Read() (Config, error) {
 	configFilePath, err := getConfigFilePath()
 	if err != nil {
 		return Config{}, err
 	}
 
-	data, err := os.ReadFile(configFilePath)
+	file, err := os.Open(configFilePath)
 	if err != nil {
 		return Config{}, err
 	}
+	defer file.Close()
 
-	config := Config{}
-	err = json.Unmarshal(data, &config)
+	decoder := json.NewDecoder(file)
+	cfg := Config{}
+	err = decoder.Decode(&cfg)
 	if err != nil {
 		return Config{}, err
 	}
-
-	return config, nil
+	
+	return cfg, nil
 }
 
 func getConfigFilePath() (string, error) {
@@ -42,50 +49,22 @@ func getConfigFilePath() (string, error) {
 	return configFilePath, nil
 }
 
-func (c Config) SetUser(userName string) error {
-	c.CurrentUserName = userName
 
-	err := write(c)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func write(config Config) error {
-	// Convert Config struct to JSON format
-	jsonData, err := json.Marshal(config)
-	if err != nil {
-		return err
-	}
-
-	// Open temporary config file
-	tempConfigPath := "temp_config.json"
-	f, err := os.OpenFile(tempConfigPath, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-
-	if _, err := f.Write(jsonData); err != nil {
-		return err
-	}
-
-	if err := f.Sync(); err != nil {
-		return err
-	}
-
-	if err := f.Close(); err != nil {
-		return err
-	}
-
-	// Replace the original config with temp config
+func write(cfg Config) error {
 	configFilePath, err := getConfigFilePath()
 	if err != nil {
 		return err
 	}
 
-	if err := os.Rename(tempConfigPath, configFilePath); err != nil {
+	file, err := os.Create(configFilePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(cfg)
+	if err != nil {
 		return err
 	}
 
