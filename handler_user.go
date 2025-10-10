@@ -16,6 +16,12 @@ func handlerRegister(s *state, cmd command) error {
 
 	name := cmd.Args[0]
 
+	_, err := s.db.GetUser(context.Background(), name)
+	if err == nil {
+		return fmt.Errorf("user already exists\n")
+	}
+
+
 	user, err := s.db.CreateUser(context.Background(), database.CreateUserParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
@@ -46,7 +52,7 @@ func handlerLogin(s *state, cmd command) error {
 
 	_, err := s.db.GetUser(context.Background(), name)
 	if err != nil {
-		fmt.Errorf("could't find user: %w", err)
+		return fmt.Errorf("could't find user: %w", err)
 	}
 
 	err = s.cfg.SetUser(name)
