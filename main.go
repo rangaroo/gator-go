@@ -1,14 +1,20 @@
 package main
 
 import (
+	_ "github.com/lib/pq"
+	"database/sql"
+)
+
+import (
 	"log"
 	"os"
-
 	"github.com/rangaroo/gator-go/internal/config"
+	"github.com/rangaroo/gator-go/internal/database"
 )
 
 type state struct {
 	cfg    *config.Config
+	db     *database.Queries
 }
 
 func main() {
@@ -16,15 +22,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("error reading config: %v", err)
 	}
+
+
+	db, err := sql.Open("postgres", cfg.DBURL)
+	dbQueries := database.New(db)
 	
 	s := &state{
+		db:  dbQueries,
 		cfg: &cfg,
 	}
 
 	cmds := commands{
 		registry: make(map[string]func(*state, command) error),
 	}
+
+	// Register courses
 	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
 
 	args := os.Args
 	if len(args) < 2 {
