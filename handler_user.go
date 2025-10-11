@@ -12,7 +12,7 @@ import (
 func handlerUsers(s *state, cmd command) error {
 	users, err := s.db.GetUsers(context.Background())
 	if err != nil {
-		return fmt.Errorf("could't print users", err)
+		return fmt.Errorf("could't get users", err)
 	}
 
 	for _, user := range users {
