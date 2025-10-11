@@ -10,10 +10,9 @@ func handlerAgg(s *state, cmd command) error {
 
 	feed, err := fetchFeed(context.Background(), url)
 	if err != nil {
-		return err
+		return fmt.Errorf("could't fetch feed: %w", err)
 	}
 
     fmt.Printf("%+v\n", *feed)
-
 	return nil
 }
