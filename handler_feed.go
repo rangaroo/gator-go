@@ -22,7 +22,6 @@ func handlerAddFeed(s *state, cmd command) error {
 		return fmt.Errorf("could't get the current user: %w", err)
 	}
 
-
 	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
@@ -35,10 +34,10 @@ func handlerAddFeed(s *state, cmd command) error {
 		return fmt.Errorf("could't create feed: %w", err)
 	}
 
-	_, err = s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+	feedFollow, err := s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
 		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 		UserID:    user.ID,
 		FeedID:    feed.ID,
 	})
@@ -49,6 +48,8 @@ func handlerAddFeed(s *state, cmd command) error {
 	fmt.Println("Feed created")
 	printFeed(feed, user)
 	fmt.Println()
+	fmt.Println("Feed follow record created")
+	printFeedFollow(feedFollow.UserName, feedFollow.FeedName) // TODO: []CreateFeedFollowRow is an array!
 	fmt.Println("=============================================")
 	return nil
 }

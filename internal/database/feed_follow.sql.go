@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const createFeedFollow = `-- name: CreateFeedFollow :many
+const createFeedFollow = `-- name: CreateFeedFollow :one
 WITH inserted_feeds_follow AS (
     INSERT INTO feed_follows (id, created_at, updated_at, user_id, feed_id)
     VALUES ($1, $2, $3, $4, $5)
@@ -22,8 +22,8 @@ WITH inserted_feeds_follow AS (
     feeds.name AS feed_name,
     users.name AS user_name
 FROM inserted_feeds_follow
-INNER JOIN feeds ON feeds.ID = inserted_feeds_follow.feed_id
-INNER JOIN users ON users.ID = inserted_feeds_follow.user_id
+INNER JOIN feeds ON inserted_feeds_follow.feed_id = feeds.id
+INNER JOIN users ON inserted_feeds_follow.user_id = users.id
 `
 
 type CreateFeedFollowParams struct {
@@ -44,51 +44,36 @@ type CreateFeedFollowRow struct {
 	UserName  string
 }
 
-func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowParams) ([]CreateFeedFollowRow, error) {
-	rows, err := q.db.QueryContext(ctx, createFeedFollow,
+func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowParams) (CreateFeedFollowRow, error) {
+	row := q.db.QueryRowContext(ctx, createFeedFollow,
 		arg.ID,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 		arg.UserID,
 		arg.FeedID,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []CreateFeedFollowRow
-	for rows.Next() {
-		var i CreateFeedFollowRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.UserID,
-			&i.FeedID,
-			&i.FeedName,
-			&i.UserName,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+	var i CreateFeedFollowRow
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserID,
+		&i.FeedID,
+		&i.FeedName,
+		&i.UserName,
+	)
+	return i, err
 }
 
 const getFeedFollowsForUser = `-- name: GetFeedFollowsForUser :many
+
 SELECT
   feed_follows.id, feed_follows.created_at, feed_follows.updated_at, feed_follows.user_id, feed_follows.feed_id,
   feeds.name AS feed_name,
   users.name AS user_name
 FROM feed_follows
-JOIN feeds AS feeds ON feeds.id = feed_follows.feed_id
-JOIN users AS users ON users.id = feed_follows.user_id
+INNER JOIN feeds ON feed_follows.feed_id = feeds.id
+INNER JOIN users ON feed_follows.user_id = users.id
 WHERE feed_follows.user_id = $1
 `
 
