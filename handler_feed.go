@@ -9,19 +9,14 @@ import (
 	"github.com/rangaroo/gator-go/internal/database"
 )
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.Args) != 2 {
 		return fmt.Errorf("usage: %s <feed_name> <url>", cmd.Name)
 	}
 	
 	name   := cmd.Args[0]
 	url    := cmd.Args[1]
-
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("could't get the current user: %w", err)
-	}
-
+	
 	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
@@ -49,7 +44,7 @@ func handlerAddFeed(s *state, cmd command) error {
 	printFeed(feed, user)
 	fmt.Println()
 	fmt.Println("Feed follow record created")
-	printFeedFollow(feedFollow.UserName, feedFollow.FeedName) // TODO: []CreateFeedFollowRow is an array!
+	printFeedFollow(feedFollow.UserName, feedFollow.FeedName)
 	fmt.Println("=============================================")
 	return nil
 }

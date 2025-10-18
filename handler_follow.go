@@ -9,18 +9,13 @@ import (
 	"github.com/rangaroo/gator-go/internal/database"
 )
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("usage: %s <feed_url>", cmd.Name)
 	}
 
-	userName := s.cfg.CurrentUserName
 	url := cmd.Args[0]
 
-	user, err := s.db.GetUser(context.Background(), userName)
-	if err != nil {
-		return fmt.Errorf("could't get user: %w", err)
-	}
 	feed, err := s.db.GetFeedByUrl(context.Background(), url)
 	if err != nil {
 		return fmt.Errorf("could't get feed: %w", err)
@@ -38,19 +33,11 @@ func handlerFollow(s *state, cmd command) error {
 	}
 
 	fmt.Println("Feed follow created:")
-	printFeedFollow(ffRow.UserName, ffRow.FeedName) // TODO: []CreateFeedFollowRow is an array!
-
+	printFeedFollow(ffRow.UserName, ffRow.FeedName)
 	return nil
 }
 
-func handlerListFeedFollows(s *state, cmd command) error {
-	userName := s.cfg.CurrentUserName
-
-	user, err := s.db.GetUser(context.Background(), userName)
-	if err != nil {
-		return fmt.Errorf("could't get user: %w", err)
-	}
-
+func handlerListFeedFollows(s *state, cmd command, user database.User) error {
 	following, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
 		return fmt.Errorf("could't get feed follows: %w", err)
@@ -61,11 +48,37 @@ func handlerListFeedFollows(s *state, cmd command) error {
 		return nil
 	}
 
-	fmt.Printf("Feeds followed by %s:\n", userName)
+	fmt.Printf("Feeds followed by %s:\n", s.cfg.CurrentUserName)
 
 	for _, ff := range following {
 		fmt.Printf("* %s\n", ff.FeedName)
 	}
+
+	return nil
+}
+
+func handlerUnfollow(s *state, cmd command, user database.User) error {
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("usage: %s <feed_url>", cmd.Name)
+	}
+
+	url := cmd.Args[0]
+
+	feed, err := s.db.GetFeedByUrl(context.Background(), url)
+	if err != nil {
+		fmt.Errorf("could't get feed: %w", err)
+	}
+
+	err = s.db.DeleteFeedFollow(context.Background(), database.DeleteFeedFollowParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	})
+
+	if err != nil {
+		return fmt.Errorf("could't unfollow: %w", err)
+	}
+
+	fmt.Printf("%s unfollowed successfully\n", feed.Name)
 
 	return nil
 }
