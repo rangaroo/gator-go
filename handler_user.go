@@ -15,6 +15,11 @@ func handlerUsers(s *state, cmd command) error {
 		return fmt.Errorf("could't get users", err)
 	}
 
+	if len(users) == 0 {
+		fmt.Println("No users")
+		return nil
+	}
+
 	for _, user := range users {
 		if user.Name == s.cfg.CurrentUserName {
 			fmt.Printf(" * %v (current)\n", user.Name)
